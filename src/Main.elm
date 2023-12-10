@@ -33,6 +33,11 @@ type Msg
     = TextChanged String
 
 
+type Problem
+    = Problem1
+    | Problem2
+
+
 
 -- update
 
@@ -44,27 +49,26 @@ update msg model =
             { model | input = input }
 
 
-parse : String -> Maybe String
-parse input =
-    input
+parseToInt : String -> Int
+parseToInt input =
+    String.trim input
         |> String.lines
         |> List.filter (String.isEmpty >> not)
-        |> List.map processLine
-        |> List.foldl (Maybe.map2 (+)) (Just 0)
-        |> Maybe.map String.fromInt
+        |> List.filterMap processLine
+        |> List.foldl (+) 0
 
 
 processLine : String -> Maybe Int
 processLine line =
-    line
+    String.trim line
         |> String.filter Char.isDigit
-        |> extractFirstLastDigits
+        |> addFirstLastText ""
         |> String.toInt
 
 
-extractFirstLastDigits : String -> String
-extractFirstLastDigits text =
-    String.left 1 text ++ String.right 1 text
+addFirstLastText : String -> String -> String
+addFirstLastText middleText replaceText =
+    String.left 1 replaceText ++ middleText ++ String.right 1 replaceText
 
 
 alphabetsToNumber : List ( String, String )
@@ -77,8 +81,8 @@ substitute substitutionTable text =
     substitutionTable
         |> List.map
             (\( first, second ) ->
-                String.replace first
-                    (String.left 1 first ++ second ++ String.right 1 first)
+                addFirstLastText second first
+                    |> String.replace first
             )
         |> List.foldl (<|) text
 
@@ -93,37 +97,35 @@ preParse substitutionTable text =
 -- view
 
 
-toStatusMessage : Maybe String -> String
+toStatusMessage : Int -> String
 toStatusMessage solution =
     case solution of
-        Just a ->
-            "Result: " ++ a
-
-        Nothing ->
+        0 ->
             "Error: Invalid input!"
 
+        a ->
+            "Result: " ++ String.fromInt a
 
-viewSolution : Int -> String -> Html Msg
+
+viewSolution : Problem -> String -> Html Msg
 viewSolution problem input =
     text <|
         case input of
             "" ->
-                ""
+                "Waiting for input..."
 
             a ->
-                toStatusMessage <|
-                    case problem of
-                        1 ->
-                            a
-                                |> parse
+                case problem of
+                    Problem1 ->
+                        a
+                            |> parseToInt
+                            |> toStatusMessage
 
-                        2 ->
-                            a
-                                |> preParse alphabetsToNumber
-                                |> parse
-
-                        _ ->
-                            Just "Error: No problem exist."
+                    Problem2 ->
+                        a
+                            |> preParse alphabetsToNumber
+                            |> parseToInt
+                            |> toStatusMessage
 
 
 view : Model -> Html Msg
@@ -132,10 +134,10 @@ view model =
         [ textarea [ onInput TextChanged ] []
         , div []
             [ div [] [ h3 [] [ text "Part 1: " ] ]
-            , viewSolution 1 model.input
+            , viewSolution Problem1 model.input
             ]
         , div []
             [ div [] [ h3 [] [ text "Part 2: " ] ]
-            , viewSolution 2 model.input
+            , viewSolution Problem2 model.input
             ]
         ]
