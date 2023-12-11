@@ -277,9 +277,23 @@ view model =
             , viewSolution Problem3 model.input2
             , h3 [] [ text "part 2: " ]
             , viewSolution Problem4 model.input2
-            , pre [] [ text model.input2 ]
             , pre []
-                [ model.input2 |> String.lines |> List.map transform |> String.join "\n" |> text ]
+                [ model.input2
+                    |> String.replace "red" "🏮"
+                    |> String.replace "green" "🐉"
+                    |> String.replace "blue" "🥶"
+                    |> text
+                ]
+            , pre []
+                [ model.input2
+                    |> String.lines
+                    |> List.map transform
+                    |> String.join "\n"
+                    |> String.replace "red" "🏮"
+                    |> String.replace "green" "🐉"
+                    |> String.replace "blue" "🥶"
+                    |> text
+                ]
             , pre []
                 [ model.input2
                     |> String.lines
