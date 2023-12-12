@@ -3,6 +3,7 @@ module Main exposing (main)
 import Browser
 import Html exposing (..)
 import Html.Events exposing (onInput)
+import Set exposing (Set)
 
 
 main : Program () Model Msg
@@ -64,8 +65,6 @@ type Problem
 
 
 
--- | Problem5
--- | Problem6
 -- update
 
 
@@ -244,7 +243,7 @@ viewSolution problem input =
                                 solve4
 
                             Problem5 ->
-                                Debug.todo
+                                solve5
 
                             Problem6 ->
                                 Debug.todo
@@ -257,6 +256,123 @@ viewSolution problem input =
                        )
                     |> Debug.toString
                     |> toStatusMessage
+
+
+
+-- Problem 5
+
+toDottedLines : Set String -> String -> List ( Int, String )
+toDottedLines symbols text =
+    symbols
+        |> Set.foldl (\s -> String.replace s ".") text
+        |> String.lines
+        |> List.indexedMap Tuple.pair
+
+
+getDigitIndices : String -> List ( Int, Int )
+getDigitIndices line =
+    ("^" ++ line ++ "$")
+        |> String.replace "." "$.^"
+        |> String.replace "^$" ""
+        |> String.split "^"
+        |> List.concatMap (String.split "$" >> List.filter (String.isEmpty >> not))
+        |> List.foldl
+            (\str ->
+                \( lengthSum, list ) ->
+                    ( lengthSum + String.length str
+                    , ( str
+                      , ( lengthSum, lengthSum + String.length str )
+                      )
+                        :: list
+                    )
+            )
+            ( 0, [] )
+        |> Tuple.second
+        |> List.filter (Tuple.first >> String.all Char.isDigit)
+        |> List.map Tuple.second
+        |> Debug.log "indexed"
+
+
+solve5 : String -> Int
+solve5 multiline =
+    let
+        preProcessed : String
+        preProcessed =
+            multiline |> identity
+
+        validIndicies : List ( Int, Int )
+        validIndicies =
+            preProcessed
+                |> String.lines
+                |> List.indexedMap Tuple.pair
+                |> List.concatMap (\( row, line ) -> getValidIndices symbols row line)
+                |> List.sortBy Tuple.first
+                |> Debug.log "Valid indices: "
+
+        toSymbols : String -> Set String
+        toSymbols line =
+            line
+                |> String.filter (Char.isDigit >> not)
+                |> String.replace "." ""
+                |> String.split ""
+                |> Set.fromList
+
+        symbols : Set String
+        symbols =
+            preProcessed
+                |> String.lines
+                |> List.foldl (toSymbols >> (Set.union)) Set.empty
+                |> Debug.log "Symbols: "
+    in
+    preProcessed
+        |> toDottedLines symbols
+        |> List.concatMap
+            (\( idxR, row ) ->
+                row
+                    |> getDigitIndices
+                    |> List.filter
+                        (\( idxFirst, idxLast ) ->
+                            validIndicies
+                                |> List.filter
+                                    (\( idxVrow, _ ) ->
+                                        idxVrow == idxR
+                                    )
+                                |> List.map Tuple.second
+                                |> List.any (\i -> idxFirst <= i && i < idxLast)
+                        )
+                    |> List.filterMap
+                        (\( from, to ) ->
+                            row
+                                |> String.slice from to
+                                |> String.toInt
+                        )
+            )
+        |> List.sum
+
+
+getValidIndices : Set String -> Int -> String -> List ( Int, Int )
+getValidIndices symbols row line =
+    line
+        |> transformSymbols symbols
+        |> String.indexes "*"
+        |> List.concatMap
+            (\i ->
+                [ ( row - 1, i - 1 )
+                , ( row - 1, i )
+                , ( row - 1, i + 1 )
+                , ( row, i - 1 )
+                , ( row, i + 1 )
+                , ( row + 1, i - 1 )
+                , ( row + 1, i )
+                , ( row + 1, i + 1 )
+                ]
+            )
+
+
+transformSymbols : Set String -> String -> String
+transformSymbols symbols text =
+    symbols
+        |> Set.foldl (\s -> String.replace s "*") text
 
 
 view : Model -> Html Msg
@@ -273,9 +389,9 @@ view model =
         , section []
             [ h2 [] [ text "Day 2" ]
             , textarea [ onInput <| TextChanged Day2 ] []
-            , h3 [] [ text "part 1: " ]
+            , h3 [] [ text "Part 1: " ]
             , viewSolution Problem3 model.input2
-            , h3 [] [ text "part 2: " ]
+            , h3 [] [ text "Part 2: " ]
             , viewSolution Problem4 model.input2
             , pre []
                 [ model.input2
@@ -312,16 +428,6 @@ view model =
             [ h2 [] [ text "Day 3" ]
             , textarea [ onInput <| TextChanged Day3 ] []
             , h3 [] [ text "Part 1: " ]
-            , viewSolution Problem5 model.input1
-            , h3 [] [ text "Part 2: " ]
-            , viewSolution Problem6 model.input1
-            ]
-        , section []
-            [ h2 [] [ text "Day 4" ]
-            , textarea [ onInput <| TextChanged Day4 ] []
-            , h3 [] [ text "Part 1: " ]
-            , viewSolution Problem7 model.input1
-            , h3 [] [ text "Part 2: " ]
-            , viewSolution Problem8 model.input1
+            , viewSolution Problem5 model.input3
             ]
         ]
