@@ -246,7 +246,7 @@ viewSolution problem input =
                                 solve5
 
                             Problem6 ->
-                                Debug.todo
+                                solve6
 
                             Problem7 ->
                                 Debug.todo
@@ -260,6 +260,7 @@ viewSolution problem input =
 
 
 -- Problem 5
+
 
 toDottedLines : Set String -> String -> List ( Int, String )
 toDottedLines symbols text =
@@ -321,7 +322,7 @@ solve5 multiline =
         symbols =
             preProcessed
                 |> String.lines
-                |> List.foldl (toSymbols >> (Set.union)) Set.empty
+                |> List.foldl (toSymbols >> Set.union) Set.empty
                 |> Debug.log "Symbols: "
     in
     preProcessed
@@ -373,6 +374,116 @@ transformSymbols : Set String -> String -> String
 transformSymbols symbols text =
     symbols
         |> Set.foldl (\s -> String.replace s "*") text
+
+
+solve6 : String -> Int
+solve6 multiline =
+    let
+        preProcessed : String
+        preProcessed =
+            multiline |> identity
+
+        getValidIndices2 : Set String -> Int -> String -> List ( Int, ( Int, Int ) )
+        getValidIndices2 symbolsSet row line =
+            line
+                |> transformSymbols symbolsSet
+                |> String.indexes "*"
+                |> List.concatMap
+                    (\i ->
+                        [ ( row * 12345 + i, ( row - 1, i - 1 ) )
+                        , ( row * 12345 + i, ( row - 1, i ) )
+                        , ( row * 12345 + i, ( row - 1, i + 1 ) )
+                        , ( row * 12345 + i, ( row, i - 1 ) )
+                        , ( row * 12345 + i, ( row, i + 1 ) )
+                        , ( row * 12345 + i, ( row + 1, i - 1 ) )
+                        , ( row * 12345 + i, ( row + 1, i ) )
+                        , ( row * 12345 + i, ( row + 1, i + 1 ) )
+                        ]
+                    )
+
+        validIndicies : List ( Int, ( Int, Int ) )
+        validIndicies =
+            preProcessed
+                |> String.lines
+                |> List.indexedMap Tuple.pair
+                |> List.concatMap (\( row, line ) -> getValidIndices2 symbols row line)
+                |> List.sortBy (Tuple.second >> Tuple.first)
+                |> Debug.log "Valid indices: "
+
+        toSymbols : String -> Set String
+        toSymbols line =
+            line
+                |> String.filter (Char.isDigit >> not)
+                |> String.replace "." ""
+                |> String.split ""
+                |> Set.fromList
+
+        symbols : Set String
+        symbols =
+            preProcessed
+                |> String.lines
+                |> List.foldl (toSymbols >> Set.union) Set.empty
+                |> Debug.log "Symbols: "
+    in
+    preProcessed
+        |> toDottedLines symbols
+        |> List.concatMap
+            (\( idxR, row ) ->
+                row
+                    |> getDigitIndices
+                    |> List.concatMap
+                        (\( idxFirst, idxLast ) ->
+                            let
+                                number : Int
+                                number =
+                                    row
+                                        |> String.slice idxFirst idxLast
+                                        |> String.toInt
+                                        |> Maybe.withDefault 1
+                            in
+                            validIndicies
+                                |> List.filter
+                                    (\( _, ( idxVrow, _ ) ) ->
+                                        idxVrow == idxR
+                                    )
+                                |> List.filter (\( _, ( _, i ) ) -> idxFirst <= i && i < idxLast)
+                                |> List.map
+                                    (\( id, _ ) -> ( id, number ))
+                        )
+            )
+        |> (\vwi ->
+                List.foldl
+                    (\( id, number ) ->
+                        \state ->
+                            let
+                                append : Int -> Int -> ( Int, Set Int ) -> ( Int, Set Int )
+                                append index value aState =
+                                    let
+                                        ( stateId, stateList ) =
+                                            aState
+                                    in
+                                    if stateId == index then
+                                        ( stateId, stateList |> Set.insert value )
+
+                                    else
+                                        ( stateId, stateList )
+                            in
+                            state
+                                |> List.map (append id number)
+                    )
+                    (vwi
+                        |> List.map (\( i, _ ) -> ( i, Set.empty ))
+                    )
+                    vwi
+           )
+        |> List.map (\( _, l ) -> l |> Set.toList)
+        |> Set.fromList
+        >> Set.toList
+        |> List.filter
+            (\l -> List.length l > 1)
+        |> List.foldl (List.product >> (+))
+            0
+        |> Debug.log "Product: "
 
 
 view : Model -> Html Msg
@@ -427,7 +538,10 @@ view model =
         , section []
             [ h2 [] [ text "Day 3" ]
             , textarea [ onInput <| TextChanged Day3 ] []
-            , h3 [] [ text "Part 1: " ]
-            , viewSolution Problem5 model.input3
+
+            -- , h3 [] [ text "Part 1: " ]
+            -- , viewSolution Problem5 model.input3
+            , h3 [] [ text "Part 2: " ]
+            , viewSolution Problem6 model.input3
             ]
         ]
