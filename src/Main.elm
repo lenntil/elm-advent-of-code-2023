@@ -1,5 +1,6 @@
 module Main exposing (main)
 
+import Array
 import Browser
 import Html exposing (..)
 import Html.Events exposing (onInput)
@@ -249,10 +250,10 @@ viewSolution problem input =
                                 solve6
 
                             Problem7 ->
-                                Debug.todo
+                                solve7
 
                             Problem8 ->
-                                Debug.todo
+                                Debug.todo "1"
                        )
                     |> Debug.toString
                     |> toStatusMessage
@@ -486,6 +487,76 @@ solve6 multiline =
         |> Debug.log "Product: "
 
 
+solve7 : String -> Int
+solve7 multiline =
+    let
+        preProcess : String -> List String
+        preProcess str =
+            str
+                |> String.trim
+                |> String.lines
+
+        parseLine : String -> ( List Int, List Int )
+        parseLine line =
+            line
+                |> String.split ":"
+                |> List.drop 1
+                >> List.head
+                >> Maybe.withDefault ""
+                |> String.split "|"
+                |> List.map
+                    (String.split " "
+                        >> List.filterMap String.toInt
+                        >> List.sort
+                    )
+                |> Array.fromList
+                |> (\arr -> Tuple.pair (arr |> Array.get 0 |> Maybe.withDefault []) (arr |> Array.get 1 |> Maybe.withDefault []))
+
+        countElements : List Int -> Set ( Int, Int )
+        countElements list =
+            List.foldl
+                (\i ->
+                    \state ->
+                        state
+                            |> Set.map
+                                (\( count, item ) ->
+                                    if i == item then
+                                        ( count + 1, item )
+
+                                    else
+                                        ( count, item )
+                                )
+                )
+                (list
+                    |> Set.fromList
+                    |> Set.map (Tuple.pair 0)
+                )
+                list
+    in
+    multiline
+        |> preProcess
+        |> List.map
+            (\list ->
+                list
+                    |> parseLine
+                    |> (\tup -> [ Tuple.first tup, Tuple.second tup ] |> List.concat)
+                    |> countElements
+                    |> Set.filter (\l -> Tuple.first l == 2)
+                    |> Set.map Tuple.second
+                    |> Set.foldl
+                        (\_ ->
+                            \state ->
+                                if state == 0 then
+                                    1
+
+                                else
+                                    state * 2
+                        )
+                        0
+            )
+        |> List.sum
+
+
 view : Model -> Html Msg
 view model =
     main_ []
@@ -538,10 +609,15 @@ view model =
         , section []
             [ h2 [] [ text "Day 3" ]
             , textarea [ onInput <| TextChanged Day3 ] []
-
-            -- , h3 [] [ text "Part 1: " ]
-            -- , viewSolution Problem5 model.input3
+            , h3 [] [ text "Part 1: " ]
+            , viewSolution Problem5 model.input3
             , h3 [] [ text "Part 2: " ]
             , viewSolution Problem6 model.input3
+            ]
+        , section []
+            [ h2 [] [ text "Day 4" ]
+            , textarea [ onInput <| TextChanged Day4 ] []
+            , h3 [] [ text "Part 1: " ]
+            , viewSolution Problem7 model.input4
             ]
         ]
