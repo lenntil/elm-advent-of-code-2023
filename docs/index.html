@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/pico.min.css" />
+    <style>
+      .container {
+        max-width: 800px;
+      }
+
+      .subtitle {
+        text-decoration: underline;
+      }
+
+      hgroup {
+        margin-top: 1rem;
+      }
+
+      header {
+        padding: 1rem;
+      }
+
+      nav ul {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      main {
+        padding-bottom: 2rem;
+      }
+
+      article {
+        min-height: calc(100vh - 300px);
+        margin-top: 0rem;
+        padding: 1rem;
+      }
+
+      hr {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      footer {
+        margin-top: 5rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="elm"></div>
+    <script src="elm.js"></script>
+    <script>
+      var app = Elm.Main.init({ node: document.getElementById("elm") });
+    </script>
+  </body>
+</html>
