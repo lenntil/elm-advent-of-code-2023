@@ -25,6 +25,7 @@ type alias Model =
     , input2 : String
     , input3 : String
     , input4 : String
+    , input42 : String
     , input5 : String
     , input6 : String
     }
@@ -36,6 +37,7 @@ init =
     , input2 = ""
     , input3 = ""
     , input4 = ""
+    , input42 = ""
     , input5 = ""
     , input6 = ""
     }
@@ -50,6 +52,7 @@ type Day
     | Day2
     | Day3
     | Day4
+    | Day4Part2
     | Day5
     | Day6
 
@@ -85,6 +88,9 @@ update msg model =
 
                 Day4 ->
                     { model | input4 = input }
+
+                Day4Part2 ->
+                    { model | input42 = input }
 
                 Day5 ->
                     { model | input5 = input }
@@ -253,7 +259,7 @@ viewSolution problem input =
                                 solve7
 
                             Problem8 ->
-                                Debug.todo "1"
+                                solve8
                        )
                     |> Debug.toString
                     |> toStatusMessage
@@ -510,7 +516,17 @@ solve7 multiline =
                         >> List.sort
                     )
                 |> Array.fromList
-                |> (\arr -> Tuple.pair (arr |> Array.get 0 |> Maybe.withDefault []) (arr |> Array.get 1 |> Maybe.withDefault []))
+                |> (\arr ->
+                        Tuple.pair
+                            (arr
+                                |> Array.get 0
+                                |> Maybe.withDefault []
+                            )
+                            (arr
+                                |> Array.get 1
+                                |> Maybe.withDefault []
+                            )
+                   )
 
         countElements : List Int -> Set ( Int, Int )
         countElements list =
@@ -555,6 +571,56 @@ solve7 multiline =
                         0
             )
         |> List.sum
+
+
+solve8 : String -> Int
+solve8 multiline =
+    let
+        point : String -> Int
+        point line =
+            case String.split ":" line of
+                [ _, xs ] ->
+                    case String.split "|" xs of
+                        [ leftStr, rightStr ] ->
+                            let
+                                leftNums =
+                                    String.split " " leftStr
+                                        |> List.filterMap String.toInt
+                                        |> Debug.log "leftNums"
+
+                                rightNums =
+                                    String.split " " rightStr
+                                        |> List.filterMap String.toInt
+                                        |> Debug.log "rightNums"
+                            in
+                            leftNums
+                                |> List.filter (\x -> List.member x rightNums)
+                                |> List.length
+                                |> Debug.log ("point" ++ (line |> String.split ":" |> List.head |> Maybe.withDefault "0"))
+
+                        _ ->
+                            Debug.todo "Not rechable"
+
+                _ ->
+                    Debug.todo "Not reachable"
+
+        process : List ( Int, Int ) -> Int
+        process pointsAndInstances =
+            case pointsAndInstances of
+                [] ->
+                    0
+
+                ( p, x ) :: xs ->
+                    x
+                        + process (List.map (\( q, y ) -> ( q, y + x )) (List.take p xs) ++ List.drop p xs)
+                        |> Debug.log ("sum" ++ String.fromInt x)
+    in
+    multiline
+        |> String.lines
+        |> List.map point
+        |> List.map (\p -> ( p, 1 ))
+        |> Debug.log "indexed"
+        |> process
 
 
 view : Model -> Html Msg
@@ -619,5 +685,10 @@ view model =
             , textarea [ onInput <| TextChanged Day4 ] []
             , h3 [] [ text "Part 1: " ]
             , viewSolution Problem7 model.input4
+            ]
+        , section []
+            [ h2 [] [ text "Day 4 - Part 2" ]
+            , textarea [ onInput <| TextChanged Day4Part2 ] []
+            , viewSolution Problem8 model.input42
             ]
         ]
