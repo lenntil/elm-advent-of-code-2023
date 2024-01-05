@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "dev": "elm-go src/Main.elm --hot --dir docs --open -- --output=\"docs/elm.js\" --debug"
+  },
+  "devDependencies": {
+    "elm": "0.19.1-6",
+    "elm-go": "^5.0.20"
+  }
+}
